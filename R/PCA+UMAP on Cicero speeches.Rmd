@@ -1,0 +1,122 @@
+---
+title: "PCA+UMAP on Cicero speeches"
+author: "Julius Herzog"
+date: "`r Sys.Date()`"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(reticulate)
+library(ggplot2)
+library(uwot)
+library(stringr)
+use_condaenv("cltk", required = TRUE)
+# Define function to process text with cltk, return cltk_doc
+
+process_text_with_cltk <- function(file_path) {
+  # Read the text file
+  text_data <- readLines(file_path)
+
+  # Concatenate the lines into a single string
+  text_data <- paste(text_data, collapse = " ")
+
+  # Define a Python function that uses CLTK
+  analyze_text <- py_run_string("
+def analyze_text_with_cltk(text):
+    from cltk import NLP
+    cltk_nlp = NLP(language='lat')
+    cltk_nlp.pipeline.processes.pop(-1)
+    print(cltk_nlp.pipeline.processes)
+    doc = cltk_nlp.analyze(text)
+    return doc
+  ")
+
+  # Call the Python function from R and store the result
+  cltk_doc <- analyze_text$analyze_text_with_cltk(text_data)
+
+  # Process cltk_doc as needed
+  #
+
+  return(cltk_doc)
+}
+```
+#Overview:
+#### I will be processing an unlabled sample of equally sized, randomly selected portions of Cicero's speeches, letters and philosophies:
+```{r}
+readLines("~/latinbert/Cicero_texts/speeches/reallyclean/SpeechSample.txt")cltk_nlp = NLP(language='lat')
+
+```
+## CLTK pipeline
+#### with my custom processing function, I process the text with the CLTK, excluding the LatinLexiconProcess.
+```{r}
+Speechpath<-
+Philpath<-
+Letterpath<-
+
+Speech_Doc<-process_text_with_cltk(Speechpath)
+Phil_Doc<-process_text_with_cltk(Philpath)
+Letter_Doc<-process_text_with_cltk(Letterpath)
+
+```
+## DATA Extraction
+#### I need to arrange the resulting data in a format that allows the calculation of principal components of variance:
+```{r}
+SpeechSentEmbeds<-Doc$sentence_embeddings
+
+#Create Data Frame with the String, Embedding and Genre
+Sentence_DF<-data.frame(Sent = Doc$sentences_strings, Embeddings = I(SpeechSentEmbeds), genre = c("Speech","Speech","Speech","Speech","Speech","Speech","Speech","Speech","Speech","Speech","Letter","Letter","Letter","Letter","Letter","Letter","Letter","Letter","Letter","Letter","Letter","Letter","Letter","Letter","Philosophy","Philosophy","Philosophy","Philosophy","Philosophy","Philosophy","Philosophy"))
+#
+# Create the embedding matrix
+embedding_matrix <- do.call(rbind, SpeechSentEmbeds)
+
+#Calculate Principal components of variance in embedding matrix
+pca_results <- prcomp(embedding_matrix,rank. = 50)
+
+```
+
+## Plots:
+#### I show what portion of the overall variance is explained by each of the principal components:
+```{r}
+## VARIANCE EXPLAINED
+# Load necessary library
+library(ggplot2)
+
+# Extract the variance explained by each principal component
+variance_explained <- pca_results$sdev^2
+total_variance <- sum(variance_explained)
+variance_explained_percent <- variance_explained / total_variance * 100
+
+# Create a data frame for plotting
+pca_variance_df <- data.frame(PC = 1:length(variance_explained_percent), 
+                              Variance = variance_explained_percent)
+
+# Create the plot
+ggplot(pca_variance_df, aes(x = PC, y = Variance)) +
+  geom_bar(stat = "identity", fill = "blue") +
+  theme_minimal() +
+  xlab("Principal Component") +
+  ylab("Percentage of Variance Explained") +
+  ggtitle("Variance Explained by Each Principal Component")
+
+```
+## PCA
+#### Plot the sentences on the axes of the two that explain the most variance:
+```{r plotpca}
+#PlotPCA
+plot(pca_results$x[,1:2], col = as.factor(Sentence_DF$genre), pch = 19)
+legend("topleft", legend = unique(Sentence_DF$genre), col = 1:length(unique(Sentence_DF$genre)), pch = 19)
+```
+## UMAP
+#### Use UMAP to incorporate the remaining dimensions of the data:
+```{r}
+#UMAP
+library(uwot)
+set.seed(123) # For reproducibility
+umap_results <- umap(embedding_matrix,n_neighbors = 2, learning_rate = 0.01, n_epochs = 10000)
+plot(umap_results[,1], umap_results[,2], col = as.factor(Sentence_DF$genre), pch = 19, xlab = "UMAP1", ylab = "UMAP2")
+
+
+```

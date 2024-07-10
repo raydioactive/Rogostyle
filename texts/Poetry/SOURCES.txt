@@ -1,0 +1,12 @@
+LICENSE
+README.md
+setup.py
+cltk_readers.egg-info/PKG-INFO
+cltk_readers.egg-info/SOURCES.txt
+cltk_readers.egg-info/dependency_links.txt
+cltk_readers.egg-info/requires.txt
+cltk_readers.egg-info/top_level.txt
+cltkreaders/__init__.py
+cltkreaders/grc.py
+cltkreaders/lat.py
+cltkreaders/readers.py

@@ -1,0 +1,10 @@
+Package purpose is to take large latin text strings, split them into chunks of a predetermined size, and pass that list of chunks to the latinbert
+The resulting embeddings are to be stored in a style object, a matrix that contains all the CLTK information
+
+
+TODO:
+- make a function to process text and generate a cltk_object
+--  make a function that preprocesses text for latinBERT
+- make a superobject that holds multiple CLTK_docs
+- make a function that chunks the raw text of the cltk_doc into equally sized chunks of n tokens, stores in a chunks subobject
+- make a function that applies latinBERT to the
